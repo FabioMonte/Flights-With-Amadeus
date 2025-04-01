@@ -1,0 +1,80 @@
+﻿@page "/mosttraveleddestinations"
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@inject HttpClient Http
+<h3>Most Traveled Destinations</h3>
+
+
+<button class="btn btn-primary" @onclick="GetAuthTokenAction">Get most travelled destinations</button>
+
+
+@code {
+
+    private async Task GetAuthTokenAction()
+    {
+        var tokenResponse = await GetAuthToken();
+
+        if (!string.IsNullOrEmpty(tokenResponse))
+        {
+            var doc = JsonDocument.Parse(tokenResponse);
+            var accessToken = doc.RootElement.GetProperty("access_token").ToString();
+            await GetMostTravelledDestinations(accessToken);
+        }
+    }
+
+    private async Task<string> GetAuthToken()
+    {
+        const string clientId = "w6SKYyu5fDVntJpKKNefZaYbE4RPE8K0";
+        const string clientSecret = "kABfnTwJZTVBgIqd";
+
+        var requestData = new Dictionary<string, string>()
+        {
+            { "grant_type", "client_credentials" },
+            { "client_id", clientId },
+            { "client_secret", clientSecret }
+        };
+
+        var requestBody = new FormUrlEncodedContent(requestData);
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, "https://test.api.amadeus.com/v1/security/oauth2/token");
+        request.Content = requestBody;
+
+        request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+
+        var response = await Http.SendAsync(request);
+
+        if (response.IsSuccessStatusCode)
+        {
+            return await response.Content.ReadAsStringAsync();
+        }
+        else
+        {
+            Console.WriteLine($"Error: {response.StatusCode} - {await response.Content.ReadAsStringAsync()}");
+            return string.Empty;
+        }
+    }
+
+    private async Task<string> GetMostTravelledDestinations(string accessToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "https://test.api.amadeus.com/v1/shopping/flight-destinations?origin=MAD");
+
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+        
+        request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+        
+        var response = await Http.SendAsync(request);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var json = response.Content.ReadAsStringAsync().Result;
+            var jsonData = JsonSerializer.Deserialize<string>(json);
+            Console.WriteLine(response.Content.ReadAsStringAsync().Result);
+            return await response.Content.ReadAsStringAsync();
+        }
+        else
+        {
+            Console.WriteLine($"Error: {response.StatusCode} - {await response.Content.ReadAsStringAsync()}");
+            return string.Empty;
+        }
+    }
+}
