@@ -1,0 +1,33 @@
+﻿@using Flights.Models
+@using System.Globalization
+
+
+<table class="table table-bordered table-striped mt-3">
+    <thead>
+    <tr>
+        <th>Departure Date</th>
+        <th>Origin</th>
+        <th>Destination</th>
+        <th>Price</th>
+        <th>Return Date</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var item in Data.data)
+    {
+        <tr>
+            <td>@item.departureDate</td>
+            <td>@item.origin</td>
+            <td>@item.destination</td>
+            <td>@(item.price.total + "€")</td>
+            <td>@item.returnDate</td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+@code {
+    [Parameter]
+    public RootObject Data { get; set; }
+    
+}

@@ -1,14 +1,25 @@
 ﻿@page "/mosttraveleddestinations"
 @using System.Text.Json
 @using System.Text.Json.Serialization
+@using Flights.Models
 @inject HttpClient Http
-<h3>Most Traveled Destinations</h3>
-
+<h2>Most Traveled Destinations</h2>
 
 <button class="btn btn-primary" @onclick="GetAuthTokenAction">Get most travelled destinations</button>
 
+@if (destinations == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <FlightsList Data="destinations"></FlightsList>
+
+}
 
 @code {
+
+    private RootObject destinations;
 
     private async Task GetAuthTokenAction()
     {
@@ -54,27 +65,24 @@
         }
     }
 
-    private async Task<string> GetMostTravelledDestinations(string accessToken)
+    private async Task<RootObject?> GetMostTravelledDestinations(string accessToken)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Get, "https://test.api.amadeus.com/v1/shopping/flight-destinations?origin=MAD");
-
+        var request = new HttpRequestMessage(HttpMethod.Get, "https://test.api.amadeus.com/v1/shopping/flight-destinations?origin=MAD");
         request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
-        
         request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
         
         var response = await Http.SendAsync(request);
 
-        if (response.IsSuccessStatusCode)
-        {
-            var json = response.Content.ReadAsStringAsync().Result;
-            var jsonData = JsonSerializer.Deserialize<string>(json);
-            Console.WriteLine(response.Content.ReadAsStringAsync().Result);
-            return await response.Content.ReadAsStringAsync();
-        }
-        else
-        {
-            Console.WriteLine($"Error: {response.StatusCode} - {await response.Content.ReadAsStringAsync()}");
-            return string.Empty;
-        }
+        if (!response.IsSuccessStatusCode) return new RootObject();
+        
+        var json = await response.Content.ReadAsStringAsync();
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var parsed = JsonSerializer.Deserialize<RootObject>(json, options);
+
+        if (parsed == null) return new RootObject();
+        destinations = parsed;
+
+        return parsed;
     }
+
 }
