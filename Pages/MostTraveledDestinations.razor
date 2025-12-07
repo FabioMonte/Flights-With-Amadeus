@@ -1,27 +1,17 @@
 ﻿@page "/mosttraveleddestinations"
 @using System.Text.Json
-@using System.Text.Json.Serialization
 @using Flights.Models
 @inject HttpClient Http
 <h2>Most Traveled Destinations</h2>
 
-<button class="btn btn-primary" @onclick="GetAuthTokenAction">Get most travelled destinations</button>
-
-@if (destinations == null)
-{
-    <p>Loading...</p>
-}
-else
-{
-    <FlightsList Data="destinations"></FlightsList>
-
-}
+<SearchForm OnSearch="GetAuthTokenAction"></SearchForm>
+<FlightsList Data="_destinations"></FlightsList>
 
 @code {
+    private RootObject _destinations;
+    private string? _inputText;
 
-    private RootObject destinations;
-
-    private async Task GetAuthTokenAction()
+    private async Task GetAuthTokenAction(string? inputText)
     {
         var tokenResponse = await GetAuthToken();
 
@@ -29,7 +19,7 @@ else
         {
             var doc = JsonDocument.Parse(tokenResponse);
             var accessToken = doc.RootElement.GetProperty("access_token").ToString();
-            await GetMostTravelledDestinations(accessToken);
+            await GetMostTravelledDestinations(accessToken, inputText);
         }
     }
 
@@ -65,9 +55,9 @@ else
         }
     }
 
-    private async Task<RootObject?> GetMostTravelledDestinations(string accessToken)
+    private async Task<RootObject?> GetMostTravelledDestinations(string accessToken, string? inputText)
     {
-        var request = new HttpRequestMessage(HttpMethod.Get, "https://test.api.amadeus.com/v1/shopping/flight-destinations?origin=MAD");
+        var request = new HttpRequestMessage(HttpMethod.Get, "https://test.api.amadeus.com/v1/shopping/flight-destinations?origin=" + inputText +"");
         request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
         request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
         
@@ -80,7 +70,7 @@ else
         var parsed = JsonSerializer.Deserialize<RootObject>(json, options);
 
         if (parsed == null) return new RootObject();
-        destinations = parsed;
+        _destinations = parsed;
 
         return parsed;
     }
